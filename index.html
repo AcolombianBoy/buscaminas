@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscaminas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(10, 30px);
+            grid-template-rows: repeat(10, 30px);
+            gap: 1px;
+            justify-content: center;
+            margin: 20px;
+        }
+        .cell {
+            width: 30px;
+            height: 30px;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .cell.revealed {
+            background-color: #fff;
+        }
+        .mine {
+            background-color: red;
+        }
+        #restart {
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Buscaminas</h1>
+    <div id="message"></div>
+    <div class="board" id="board"></div>
+    <button id="restart" style="display:none;" onclick="startGame()">Iniciar nueva partida</button>
+
+    <script>
+        const size = 10;
+        const mineCount = 10;
+        let board, revealed, mines, gameOver;
+
+        function startGame() {
+            board = [];
+            revealed = [];
+            mines = [];
+            gameOver = false;
+            document.getElementById('message').textContent = '';
+            document.getElementById('restart').style.display = 'none';
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            for (let row = 0; row < size; row++) {
+                const rowArray = [];
+                for (let col = 0; col < size; col++) {
+                    const cell = {
+                        row,
+                        col,
+                        isMine: false,
+                        revealed: false,
+                        adjacentMines: 0
+                    };
+                    rowArray.push(cell);
+                    const div = document.createElement('div');
+                    div.classList.add('cell');
+                    div.addEventListener('click', () => revealCell(cell));
+                    boardElement.appendChild(div);
+                }
+                board.push(rowArray);
+            }
+            placeMines();
+            calculateAdjacentMines();
+        }
+
+        function placeMines() {
+            let count = 0;
+            while (count < mineCount) {
+                const row = Math.floor(Math.random() * size);
+                const col = Math.floor(Math.random() * size);
+                const cell = board[row][col];
+                if (!cell.isMine) {
+                    cell.isMine = true;
+                    mines.push(cell);
+                    count++;
+                }
+            }
+        }
+
+        function calculateAdjacentMines() {
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    const cell = board[row][col];
+                    if (!cell.isMine) {
+                        let adjacent = 0;
+                        for (let r = -1; r <= 1; r++) {
+                            for (let c = -1; c <= 1; c++) {
+                                const neighbor = getCell(row + r, col + c);
+                                if (neighbor && neighbor.isMine) {
+                                    adjacent++;
+                                }
+                            }
+                        }
+                        cell.adjacentMines = adjacent;
+                    }
+                }
+            }
+        }
+
+        function getCell(row, col) {
+            if (row < 0 || row >= size || col < 0 || col >= size) {
+                return null;
+            }
+            return board[row][col];
+        }
+
+        function revealCell(cell) {
+            if (gameOver || cell.revealed) return;
+
+            const cellElement = document.getElementById('board').children[cell.row * size + cell.col];
+            if (cell.isMine) {
+                cellElement.classList.add('mine');
+                document.getElementById('message').textContent = '¡Perdiste!';
+                gameOver = true;
+                document.getElementById('restart').style.display = 'block';
+                return;
+            }
+
+            cell.revealed = true;
+            cellElement.classList.add('revealed');
+            if (cell.adjacentMines > 0) {
+                cellElement.textContent = cell.adjacentMines;
+            }
+
+            if (isGameWon()) {
+                document.getElementById('message').textContent = '¡Ganaste!';
+                gameOver = true;
+                document.getElementById('restart').style.display = 'block';
+            }
+        }
+
+        function isGameWon() {
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    const cell = board[row][col];
+                    if (!cell.isMine && !cell.revealed) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        startGame();
+    </script>
+</body>
+</html>
